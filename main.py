@@ -75,25 +75,39 @@ def train_booster(df_t, params, train_size=-5):
 def ar_prediction(model:XGBRegressor, X_init:np.ndarray, horizon:int):
     Xs = []
     preds = []
-    X_init = X_init.copy()
-    # print(X_init)
     year = np.array(X_init[0]).reshape(1)
     month = np.array(X_init[1]).reshape(1)
-    lags = X_init[2:]
-    for i in range(horizon):
-        X_pred = np.concatenate([year, month, lags]).reshape([1,-1])
-        # print(X_pred)
-        pred = model.predict(X_pred)
-        Xs.append(X_pred.copy())
-        preds.append(pred.copy())
-        lags = np.concatenate([lags[1:], np.array(pred).reshape(-1)])
-        month += 1
-        if month > 12:
-            month = 1
-            year += 1
-            
-    return np.concatenate(Xs, axis=0), np.concatenate(preds).reshape(-1)
+    if len(X_init.flatten()) >2:
 
+        X_init = X_init.copy()
+        # print(X_init)
+        
+        lags = X_init[2:]
+        for i in range(horizon):
+            X_pred = np.concatenate([year, month, lags]).reshape([1,-1])
+            # print(X_pred)
+            pred = model.predict(X_pred)
+            Xs.append(X_pred.copy())
+            preds.append(pred.copy())
+            lags = np.concatenate([lags[1:], np.array(pred).reshape(-1)])
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+                
+        return np.concatenate(Xs, axis=0), np.concatenate(preds).reshape(-1)
+    else:
+        for i in range(horizon):
+            X_pred = np.concatenate([year, month]).reshape([1,-1])
+            # print(X_pred)
+            pred = model.predict(X_pred)
+            Xs.append(X_pred.copy())
+            preds.append(pred.copy())
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+        return np.concatenate(Xs, axis=0), np.concatenate(preds).reshape(-1)
 
 st.write("""
          # XGBoost
@@ -147,7 +161,7 @@ if got_data:
 
     n_lags = int(best["n_lags"])
 
-
+    st.write(f"{n_lags}")
 
     dg = df_t.groupby(["Year", "Month"]).agg({"SaleAmount":"sum"}).reset_index()\
         .sort_values(["Year","Month"],ignore_index=True).rename(columns={"SaleAmount":"y"})
