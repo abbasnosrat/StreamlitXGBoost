@@ -59,7 +59,7 @@ def train_booster(df_t, params, train_size=-5):
     xgb_model = xgb.XGBRegressor()
 
         # Create the RandomizedSearchCV object
-    random_search = RandomizedSearchCV(xgb_model, param_distributions=param_dist, n_iter=30, cv=5, scoring="neg_mean_absolute_error")
+    random_search = RandomizedSearchCV(xgb_model, param_distributions=param_dist, n_iter=30, cv=5, scoring="neg_mean_absolute_error", n_jobs=-1)
 
         # Fit the RandomizedSearchCV object to the training data
     random_search.fit(X_train, y_train)
