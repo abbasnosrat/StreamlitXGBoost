@@ -124,7 +124,7 @@ if got_data:
     if not manual:
         mses = []
         models = []
-        lags  = stqdm(trange(10), leave=False)
+        lags  = range(10)
         lags.set_description("Tuning the model. Please be patient")
         for lag in lags:
             
