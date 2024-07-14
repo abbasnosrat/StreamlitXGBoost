@@ -125,7 +125,7 @@ if got_data:
         mses = []
         models = []
         lags  = range(10)
-        lags.set_description("Tuning the model. Please be patient")
+        # lags.set_description("Tuning the model. Please be patient")
         for lag in lags:
             
             model, mse = train_booster(df_t, {"n_lags": lag}, train_size)
