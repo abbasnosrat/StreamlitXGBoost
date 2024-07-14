@@ -161,7 +161,7 @@ if got_data:
 
     n_lags = int(best["n_lags"])
 
-    st.write(f"{n_lags}")
+  
 
     dg = df_t.groupby(["Year", "Month"]).agg({"SaleAmount":"sum"}).reset_index()\
         .sort_values(["Year","Month"],ignore_index=True).rename(columns={"SaleAmount":"y"})
