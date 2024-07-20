@@ -114,12 +114,18 @@ st.write("""
          """)
 st.sidebar.write("Controls")
 file = st.sidebar.file_uploader("Upload Your Dataset", type=".csv")
+use_sample_data = st.sidebar.checkbox("Use Sample Data")
 
 # df = pd.read_csv("SalesData.csv") if file is None else pd.read_csv(file)
 try:
     df = pd.read_csv(file)
     got_data = True
-except: got_data = False
+except:
+    if use_sample_data:
+        df = pd.read_csv("./SalesData.csv") 
+        got_data = True
+    else:
+        got_data = False
 
 if got_data:
     products = list(df.GoodName.unique())
@@ -222,7 +228,7 @@ if got_data:
     # plt.savefig("ar_pred.jpg")
 else:
     
-    st.write("Please uppload your data")
+    st.write("Please upload your data")
     df = pd.read_csv("SalesData.csv")[["GoodName", "StrFactDate", "SaleAmount"]]
     csv = convert_df(df)
     st.download_button("Sample Data", csv, "SampleData.csv","text/csv",
