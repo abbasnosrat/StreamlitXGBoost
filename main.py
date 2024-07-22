@@ -111,10 +111,12 @@ def ar_prediction(model:XGBRegressor, X_init:np.ndarray, horizon:int):
 
 st.write("""
          # XGBoost
+         Hover your curser on the ? if you want information on each component
          """)
 st.sidebar.write("Controls")
-file = st.sidebar.file_uploader("Upload Your Dataset", type=".csv")
-use_sample_data = st.sidebar.checkbox("Use Sample Data")
+file = st.sidebar.file_uploader("Upload Your Dataset", type=".csv",help="You can upload the data you want the model to be trained on")
+use_sample_data = st.sidebar.checkbox("Use Sample Data",
+                                      help="Check this if you do not want to upload a dataset and want to upload data and the model will be trained on the sample dataset")
 
 # df = pd.read_csv("SalesData.csv") if file is None else pd.read_csv(file)
 try:
@@ -129,11 +131,20 @@ except:
 
 if got_data:
     products = list(df.GoodName.unique())
-    product = st.sidebar.selectbox(label="Please select a product", options=products)
-    horizon = int(st.sidebar.slider(label="Select Prediction Horizon", min_value=2, max_value=30, value=5))
-    test_size_manual = st.sidebar.number_input(label="Select Test Size", min_value=0, max_value=30, value=0)
-    manual = st.sidebar.checkbox("Manual Mode")
-    n_lags_manual=float(st.sidebar.text_input(label="Select Number of lags", value=1))
+    product = st.sidebar.selectbox(label="Please select a product", options=products,
+                                    help="Select the product you want the model to predict. Once the product is selected, the model will aggregate the product's data on a monthly level and train on it. Keep in mind that the model cannot be trained on a product with low data.")
+    horizon = int(st.sidebar.slider(label="Select Prediction Horizon", min_value=2, max_value=30, value=5,
+                                    help="You can select how many months do you want the model to predict into the future."))
+    test_size_manual = st.sidebar.number_input(label="Select Test Size", min_value=0, max_value=30, value=0,
+                                               help="""The data is divided into training and testing datasets, these datasets are used for tuning the model parameters.
+                                               Sometimes, the test data may suffer a trend change, which is not present in the train data.
+                                               For example, the trend is increasing or flat in the training data and it changes to a declining trend after the split.
+                                               Consequently, the model is not prepared for this change, which leads to poor predictions on the test data.
+                                               To mitigate this issue, you can change how many months are kept as test data. By default, the application keeps 10 months for testing
+                                               if the dataset has more than 20 months and 2 months for if the dataset has less than 20 months of data. The default values are selected if this input's value is zero.""")
+    manual = st.sidebar.checkbox("Manual Mode", help='''The model uses Bayesian optimization for hyper-parameter tuning.
+                                 This process is time consuming and sometimes, it may not find the optimal parameters.
+                                 By checking this box, you can bypass the automatic tuning and select the hyper-parameters manually.''')
     
 
     df_t = df.query(f"GoodName == '{product}'").reset_index(drop=True)
@@ -155,6 +166,11 @@ if got_data:
         best = {"n_lags": np.argmin(mses)}
         best_params = models[int(best["n_lags"])].best_params_
     else:
+        n_lags_manual=float(st.sidebar.number_input(label="Select Number of lags", value=1,
+                                                min_value=0,
+                                                max_value=1000,
+                                                help="This input selects the number of lags used for prediction. Lag is the number of months in the past that the model uses for future prediction."))
+    
         best = {"n_lags": n_lags_manual}
         model, mse = train_booster(df_t, {"n_lags": n_lags_manual}, train_size)
         best_params = model.best_params_
@@ -194,6 +210,62 @@ if got_data:
     fig_tuned.add_vline(x=ticks[train_size], line=dict(dash='dash', color='black'), name='split')
 
     fig_tuned.update_layout(title='One Step Ahead Prediction', xaxis_title='Date', yaxis_title='Sales Amount')
+    st.markdown("""
+        <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+        .help-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;  /* Positioned to the right */
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position the tooltip above the text */
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        </style>
+        <div class="chart-container">
+            <div class="tooltip">
+                <span class="help-icon">❓</span>
+                <span class="tooltiptext">The figure depicts the one-step-ahead predictions of the model. In OSA prediction, the model uses the real data for predicing one month into the future.</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)    
+    
     st.plotly_chart(fig_tuned)
     # plt.plot(ticks,y, ".k", label="observations")
     # plt.plot(pred, label="prediction")
@@ -212,6 +284,61 @@ if got_data:
     fig_ar = go.Figure()
     fig_ar.add_trace(go.Scatter(x=ticks, y=preds, mode='lines', name='predictions'))
     fig_ar.update_layout(title='AutoRegressive Prediction', xaxis_title='Date', yaxis_title='Sales Amount')
+    st.markdown("""
+        <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+        .help-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;  /* Positioned to the right */
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%; /* Position the tooltip above the text */
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        </style>
+        <div class="chart-container">
+            <div class="tooltip">
+                <span class="help-icon">❓</span>
+                <span class="tooltiptext">The figure demonstrates the AR predictions of the model. In AR prediction, the model uses its own predictions to predict the next month</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)    
     st.plotly_chart(fig_ar)
     # plt.figure()
     df_pred = pd.DataFrame({"Date":ticks, "Yhat":preds})
@@ -221,7 +348,7 @@ if got_data:
     csv,
     "file.csv",
     "text/csv",
-    key='download-csv'
+    key='download-csv', help="Download the data behind the chart above in CSV format."
     )
 
     # plt.plot(preds, label="prediction")
