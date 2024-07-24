@@ -111,7 +111,7 @@ def ar_prediction(model:XGBRegressor, X_init:np.ndarray, horizon:int):
 
 st.write("""
          # XGBoost
-         Hover your curser on the ? if you want information on each component
+         Hover your cursor on the ? if you want information on each component. Also, the documentation is available on [this Google doc](https://docs.google.com/document/d/1oMk5kQi6FAgqsGGXW-ksRVP8OyhvmnbUnxn0mpi5x2U/edit?usp=sharing). You can find a detailed guide of the app on [this doc](https://docs.google.com/document/d/1J3bzPC_u5nAXrmgdaiQtL9J35yV_dVR7XLDImyE_78Y/edit?usp=sharing)
          """)
 st.sidebar.write("Controls")
 file = st.sidebar.file_uploader("Upload Your Dataset", type=".csv",help="You can upload the data you want the model to be trained on")
