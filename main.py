@@ -113,10 +113,15 @@ st.write("""
          # XGBoost
          Hover your cursor on the ? if you want information on each component. Also, the documentation is available on [this Google doc](https://docs.google.com/document/d/1oMk5kQi6FAgqsGGXW-ksRVP8OyhvmnbUnxn0mpi5x2U/edit?usp=sharing). You can find a detailed guide of the app on [this doc](https://docs.google.com/document/d/1J3bzPC_u5nAXrmgdaiQtL9J35yV_dVR7XLDImyE_78Y/edit?usp=sharing)
          """)
+
+sheet_id = "1PNTC8IvqruHs3DWVX6HW30d2TCM6z3PCxtRMA_qep0M"
+sheet_name = "Sheet1"
+url = f'https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name}'
+helps = pd.read_csv(url,index_col=0)
 st.sidebar.write("Controls")
-file = st.sidebar.file_uploader("Upload Your Dataset", type=".csv",help="You can upload the data you want the model to be trained on")
+file = st.sidebar.file_uploader("Upload Your Dataset", type=".csv",help=helps.loc["Upload Your Dataset"].Description)
 use_sample_data = st.sidebar.checkbox("Use Sample Data",
-                                      help="Check this if you do not want to upload a dataset and want to upload data and the model will be trained on the sample dataset")
+                                      help=helps.loc["Use Sample Data"].Description)
 
 # df = pd.read_csv("SalesData.csv") if file is None else pd.read_csv(file)
 try:
@@ -132,19 +137,12 @@ except:
 if got_data:
     products = list(df.GoodName.unique())
     product = st.sidebar.selectbox(label="Please select a product", options=products,
-                                    help="Select the product you want the model to predict. Once the product is selected, the model will aggregate the product's data on a monthly level and train on it. Keep in mind that the model cannot be trained on a product with low data.")
+                                    help=helps.loc["Please Select A Product"].Description)
     horizon = int(st.sidebar.slider(label="Select Prediction Horizon", min_value=2, max_value=30, value=5,
-                                    help="You can select how many months do you want the model to predict into the future."))
+                                    help=helps.loc["Select Prediction Horizon"].Description))
     test_size_manual = st.sidebar.number_input(label="Select Test Size", min_value=0, max_value=30, value=0,
-                                               help="""The data is divided into training and testing datasets, these datasets are used for tuning the model parameters.
-                                               Sometimes, the test data may suffer a trend change, which is not present in the train data.
-                                               For example, the trend is increasing or flat in the training data and it changes to a declining trend after the split.
-                                               Consequently, the model is not prepared for this change, which leads to poor predictions on the test data.
-                                               To mitigate this issue, you can change how many months are kept as test data. By default, the application keeps 10 months for testing
-                                               if the dataset has more than 20 months and 2 months for if the dataset has less than 20 months of data. The default values are selected if this input's value is zero.""")
-    manual = st.sidebar.checkbox("Manual Mode", help='''The model uses Bayesian optimization for hyper-parameter tuning.
-                                 This process is time consuming and sometimes, it may not find the optimal parameters.
-                                 By checking this box, you can bypass the automatic tuning and select the hyper-parameters manually.''')
+                                               help=helps.loc["Select Test Size"].Description)
+    manual = st.sidebar.checkbox("Manual Mode", help=helps.loc["Manual Mode"].Description)
     
 
     df_t = df.query(f"GoodName == '{product}'").reset_index(drop=True)
@@ -169,7 +167,7 @@ if got_data:
         n_lags_manual=float(st.sidebar.number_input(label="Select Number of lags", value=1,
                                                 min_value=0,
                                                 max_value=1000,
-                                                help="This input selects the number of lags used for prediction. Lag is the number of months in the past that the model uses for future prediction."))
+                                                help=helps.loc["Select Number of lags"].Description))
     
         best = {"n_lags": n_lags_manual}
         model, mse = train_booster(df_t, {"n_lags": n_lags_manual}, train_size)
@@ -258,13 +256,13 @@ if got_data:
             opacity: 1;
         }
         </style>
-        <div class="chart-container">
+       
+    """ + f""" <div class="chart-container">
             <div class="tooltip">
                 <span class="help-icon">❓</span>
-                <span class="tooltiptext">The figure depicts the one-step-ahead predictions of the model. In OSA prediction, the model uses the real data for predicing one month into the future.</span>
+                <span class="tooltiptext">{helps.loc['One Step Ahead Prediction'].Description}</span>
             </div>
-        </div>
-    """, unsafe_allow_html=True)    
+        </div>""", unsafe_allow_html=True)    
     
     st.plotly_chart(fig_tuned)
     # plt.plot(ticks,y, ".k", label="observations")
@@ -332,13 +330,13 @@ if got_data:
             opacity: 1;
         }
         </style>
-        <div class="chart-container">
+       
+    """ + f""" <div class="chart-container">
             <div class="tooltip">
                 <span class="help-icon">❓</span>
-                <span class="tooltiptext">The figure demonstrates the AR predictions of the model. In AR prediction, the model uses its own predictions to predict the next month</span>
+                <span class="tooltiptext">{helps.loc['AutoRegressive Prediction'].Description}</span>
             </div>
-        </div>
-    """, unsafe_allow_html=True)    
+        </div>""", unsafe_allow_html=True) 
     st.plotly_chart(fig_ar)
     # plt.figure()
     df_pred = pd.DataFrame({"Date":ticks, "Yhat":preds})
